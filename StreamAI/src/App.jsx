@@ -2,7 +2,6 @@ import './App.css'
 import {createBrowserRouter, RouterProvider} from "react-router-dom"
 import Login from './pages/Login'
 import Home from './pages/Home'
-import Header from './components/Header'
 
 const router = createBrowserRouter([{
   path : "/",
@@ -16,7 +15,6 @@ const router = createBrowserRouter([{
 function App() {
   return (
     <>
-    <Header/>
     <RouterProvider router={router} /> 
     </>
   )
