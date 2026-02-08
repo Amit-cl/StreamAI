@@ -1,21 +1,28 @@
 import './App.css'
-import {createBrowserRouter, RouterProvider} from "react-router-dom"
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import Login from './pages/Login'
 import Home from './pages/Home'
-
-const router = createBrowserRouter([{
-  path : "/",
-  element : <Login/>
-},{
-  path : "/home" ,
-  element : <Home/>
-}
-])
+// import Header from './components/Header'
+import appStore from './utils/appStore'
+import { Provider } from 'react-redux'
 
 function App() {
+  const router = createBrowserRouter([
+    {
+      path: '/',
+      element: <Login />,
+    },
+    {
+      path: '/home',
+      element: <Home />,
+    },
+  ])
+
   return (
     <>
-    <RouterProvider router={router} /> 
+      <Provider  store={appStore}>
+        <RouterProvider router={router} />
+      </Provider>
     </>
   )
 }
