@@ -1,67 +1,140 @@
-import { useState, useRef, useEffect } from "react"
-import { useSelector } from "react-redux"
-import { useLocation } from "react-router-dom"
-import { signOut } from "firebase/auth"
-import { auth } from "../utility/firebase"
-import StreamAiLogo from "../assets/icons/streamAiLogo.svg?react"
+import React, { useEffect } from 'react'
+import StreamAiLogo from '../assets/icons/streamAiLogo.svg?react'
+import { auth } from '../utils/firebase'
+import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { useNavigate } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
+import { addUser, removeUser } from '../utils/userSlice'
+import { toggleGptSearchView } from '../utils/gptSlice'
+import { SUPPORTED_LANGUAGES } from '../utils/constant'
+import { changeLanguage } from '../utils/configSlice'
 
 const DEFAULT_AVATAR =
   "https://cdn-icons-png.flaticon.com/512/149/149071.png"
 
 const Header = () => {
-  const { user } = useSelector((store) => store.user)
-  const location = useLocation()
-  const [open, setOpen] = useState(false)
-  const menuRef = useRef(null)
+  const navigate = useNavigate()
+  const user = useSelector((store) => store.user)
+  const dispatch = useDispatch()
+  const showGptSearch = useSelector((store) => store.gpt.showGptSearch)
 
-  const isLoginPage = location.pathname === "/"
-
-  useEffect(() => {
-    const handler = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
-  }, [])
-
-  const handleSignOut = async () => {
-    await signOut(auth)
-    setOpen(false)
+  const handleToggle = () => {
+    dispatch(toggleGptSearchView())
   }
 
-  return (
-    <div className="absolute px-4 sm:px-8 py-2 bg-linear-to-b from-black w-full z-10 flex items-center justify-between">
-      <StreamAiLogo className="w-32 sm:w-44" />
+  const handleLanguageChanges = (e) => {
+    // console.log(e.target.value);
+    dispatch(changeLanguage(e.target.value))
+  }
 
-      {/* Hide auth controls on Login page */}
-      {!isLoginPage && user && (
-        <div className="relative" ref={menuRef}>
+  const handleSignOut = () => {
+    signOut(auth)
+      .then(() => {
+        navigate('/')
+      })
+      .catch((error) => {
+        navigate('/Error')
+      })
+  }
+
+  useEffect(() => {
+    const unsubscibe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const { uid, email, displayName, photoURL } = user
+        dispatch(
+          addUser({
+            uid: uid,
+            email: email,
+            displayName: displayName,
+            photoURL: photoURL,
+          }),
+        )
+        navigate('/Home')
+      } else {
+        dispatch(removeUser())
+        navigate('/')
+      }
+    })
+    // unsubscribed on the component unmount
+    return () => unsubscibe()
+  }, [])
+
+ return (
+  <header
+    className="
+      fixed top-0 left-0 right-0 z-50
+      bg-linear-to-b from-black via-black/80 to-transparent
+      px-4 py-2.5 sm:px-6 sm:py-3 md:px-8 md:py-4
+    "
+  >
+    <div className="flex items-center justify-between max-w-7xl mx-auto">
+
+      {/* Logo */}
+      <div className="shrink-0 w-28 sm:w-32 md:w-36 lg:w-44">
+        <StreamAiLogo className="w-full h-auto" />
+      </div>
+
+      {user && (
+        <div className="
+          flex items-center gap-2 sm:gap-3 md:gap-4 lg:gap-6
+          flex-nowrap
+        ">
+          
+          {showGptSearch && (
+            <select
+              onChange={handleLanguageChanges}
+              className="
+                bg-black/70 text-white text-xs sm:text-sm
+                px-2.5 py-1.5 rounded-lg border border-gray-600/50
+                outline-none hidden xs:block
+              "
+            >
+              {SUPPORTED_LANGUAGES.map((lang) => (
+                <option key={lang.identifier} value={lang.identifier}>
+                  {lang.name}
+                </option>
+              ))}
+            </select>
+          )}
+
+          <button
+            onClick={handleToggle}
+            className="
+              bg-white/90 hover:bg-white text-black font-medium
+              text-xs sm:text-sm md:text-base
+              px-3 py-1.5 sm:px-4 sm:py-2
+              rounded-lg whitespace-nowrap shrink-0
+            "
+          >
+            {showGptSearch ? 'Homepage' : 'GPT Search'}
+          </button>
+
+          {/* Avatar - smaller on mobile, optional hide: hidden sm:block */}
           <img
-            src={user.photo || DEFAULT_AVATAR}
-            alt="profile"
-            onClick={() => setOpen((prev) => !prev)}
-            className="w-10 h-10 rounded-full border-2 border-white object-cover cursor-pointer"
+            className="
+              w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11
+              rounded-full object-cover shrink-0
+              /* hidden sm:block */   {/* uncomment if you want avatar hidden on mobile */}
+            "
+            src={user.photoURL}
+            alt="usericon"
           />
 
-          {open && (
-            <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-lg py-2 text-sm">
-              <p className="px-4 py-2 text-gray-700 font-medium border-b">
-                {user.name || "User"}
-              </p>
-              <button
-                onClick={handleSignOut}
-                className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600"
-              >
-                Sign Out
-              </button>
-            </div>
-          )}
+          <button
+            onClick={handleSignOut}
+            className="
+              text-white font-medium text-sm sm:text-base
+              hover:text-gray-300 whitespace-nowrap shrink-0
+              px-1 sm:px-2
+            "
+          >
+            Sign Out
+          </button>
         </div>
       )}
     </div>
-  )
+  </header>
+)
 }
 
 export default Header

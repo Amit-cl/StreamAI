@@ -1,13 +1,12 @@
 import React from 'react'
 import Form from '../components/Form'
-import Header from '../components/Header'
 
 const Login = () => {
   return (
-    <>
-    <Header/>
-    <Form />
-    </>
+  <div className="min-h-screen w-full overflow-x-hidden">
+  <Form />
+</div>
+
   )
 }
 
